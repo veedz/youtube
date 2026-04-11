@@ -1,4 +1,18 @@
 . "$MODPATH/config"
+RVAPPVER="$(grep_prop version "$MODPATH/module.prop")"
+CACHE=/sdcard/Android/data/com.google.android.youtube
+YTC="/sdcard"
+
+case $(getprop ro.build.version.sdk) in
+	27|28|29|30|31|32|33)
+		rm -rf /data/data/$PKG_NAME/cache
+		rm -rf /data/data/$PKG_NAME/code_cache
+		;;
+	32|33|34|35|36)
+		rm -rf /data_mirror/data_ce/null/0/$PKG_NAME/cache
+		rm -rf /data_mirror/data_ce/null/0/$PKG_NAME/code_cache
+		;;
+esac
 
 ui_print ""
 if [ -n "$MODULE_ARCH" ] && [ "$MODULE_ARCH" != "$ARCH" ]; then
@@ -90,7 +104,7 @@ install() {
 	settings put global package_verifier_enable 0
 	SZ=$(stat -c "%s" "$MODPATH/$PKG_NAME.apk")
 	for IT in 1 2; do
-		if ! SES=$(pmex install-create --user 0 -i com.android.vending -r -S "$SZ"); then
+		if ! SES=$(pmex install-create --user 0 -i com.android.vending -r -d -g -S "$SZ"); then
 			ui_print "ERROR: install-create failed"
 			install_err="$SES"
 			break
@@ -162,6 +176,8 @@ ui_print "* Optimizing $PKG_NAME"
 
 cmd package compile -m speed-profile -f "$PKG_NAME"
 # nohup cmd package compile -m speed-profile -f "$PKG_NAME" >/dev/null 2>&1
+cmd appops set com.google.android.youtube RUN_IN_BACKGROUND ignore
+cmd appops set com.google.android.youtube RUN_ANY_IN_BACKGROUND ignore
 
 if [ "$KSU" ]; then
 	UID=$(dumpsys package "$PKG_NAME" 2>&1 | grep -m1 uid)
@@ -183,8 +199,25 @@ if [ "$KSU" ]; then
 	fi
 fi
 
+configyt() {		
+# config
+echo "ImF1dG9fY2FwdGlvbnNfc3R5bGUiOiAiYm90aF9kaXNhYmxlZCIsCiJieXBhc3NfYW1iaWVudF9tb2RlX3Jlc3RyaWN0aW9ucyI6IHRydWUsCiJieXBhc3NfaW1hZ2VfcmVnaW9uX3Jlc3RyaWN0aW9ucyI6IHRydWUsCiJjb3B5X3ZpZGVvX3VybF90aW1lc3RhbXAiOiBmYWxzZSwKImdyYWRpZW50X2xvYWRpbmdfc2NyZWVuIjogdHJ1ZSwKImhpZGVfYXV0b3BsYXlfYnV0dG9uIjogZmFsc2UsCiJoaWRlX2Nhc3RfYnV0dG9uIjogZmFsc2UsCiJoaWRlX2NvbW1lbnRzX2NyZWF0ZV9hX3Nob3J0X2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9jb21tdW5pdHlfYnV0dG9uIjogZmFsc2UsCiJoaWRlX2Nyb3dkZnVuZGluZ19ib3giOiB0cnVlLAoiaGlkZV9mbG9hdGluZ19taWNyb3Bob25lX2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9ob3Jpem9udGFsX3NoZWx2ZXMiOiBmYWxzZSwKImhpZGVfaW1hZ2Vfc2hlbGYiOiBmYWxzZSwKImhpZGVfbGF0ZXN0X3Bvc3RzIjogZmFsc2UsCiJoaWRlX3BsYXlhYmxlcyI6IGZhbHNlLAoiaGlkZV9wcmVtaXVtX3ZpZGVvX3F1YWxpdHkiOiBmYWxzZSwKImhpZGVfc2hvcnRzX2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9zaG9ydHNfZWZmZWN0X2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9zaG9ydHNfaW5mb19wYW5lbCI6IGZhbHNlLAoiaGlkZV9zaG9ydHNfbmV3X3Bvc3RzX2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9zaG9ydHNfcHJldmlld19jb21tZW50IjogZmFsc2UsCiJoaWRlX3Nob3J0c19yZW1peF9idXR0b24iOiBmYWxzZSwKImhpZGVfc2hvcnRzX3NhdmVfc291bmRfYnV0dG9uIjogZmFsc2UsCiJoaWRlX3Nob3J0c19zZWFyY2hfc3VnZ2VzdGlvbnMiOiBmYWxzZSwKImhpZGVfc2hvcnRzX3VwY29taW5nX2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9zaG9ydHNfdXNlX3NvdW5kX2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9zaG9ydHNfdXNlX3RlbXBsYXRlX2J1dHRvbiI6IGZhbHNlLAoiaGlkZV9zaG93X21vcmVfYnV0dG9uIjogZmFsc2UsCiJoaWRlX3RpbWVkX3JlYWN0aW9ucyI6IGZhbHNlLAoiaGlkZV90b29sYmFyX2NyZWF0ZV9idXR0b24iOiBmYWxzZSwKImhpZGVfdmlkZW9fcmVjb21tZW5kYXRpb25fbGFiZWxzIjogZmFsc2UsCiJoaWRlX3dlYl9zZWFyY2hfcmVzdWx0cyI6IGZhbHNlLAoiaGlkZV95b3VfbWF5X2xpa2Vfc2VjdGlvbiI6IGZhbHNlLAoibWluaXBsYXllcl90eXBlIjogIm1vZGVybl8yIiwKIm5hdmlnYXRpb25fYmFyX2FuaW1hdGlvbnMiOiB0cnVlLAoic3Bvb2ZfZGV2aWNlX2RpbWVuc2lvbnMiOiB0cnVlLAoic3dhcF9jcmVhdGVfd2l0aF9ub3RpZmljYXRpb25zX2J1dHRvbiI6IGZhbHNlLAoidmlkZW9fcXVhbGl0eV9kZWZhdWx0X21vYmlsZSI6IDM2MCwKInZpZGVvX3F1YWxpdHlfZGVmYXVsdF93aWZpIjogNzIw" | base64 -d > "$YTC/YouTube-V$PKG_VER.txt"
+}
+
+if [ "$CACHE" ]; then
+  rm -rf $CACHE/cache
+  mkdir -p $CACHE
+  touch $CACHE/cache
+fi
+
+if [ "$YTC" ]; then
+  rm -rf $YTC/YouTube*.txt $YTC/YouTube*.json
+configyt
+fi
+
 rm -rf "${MODPATH:?}/bin" "$MODPATH/$PKG_NAME.apk"
 
 ui_print "* Done"
 ui_print "  by j-hc (github.com/j-hc)"
+ui_print "  remod by hafizd"
 ui_print " "
